@@ -1,0 +1,37 @@
+---
+title: "P_8105_HW3"
+author: "Arthur Starodynov"
+date: "2023-10-14-23"
+output: github_document
+---
+
+Start the homework by loading the data set. 
+
+```{r}
+library(tidyverse)
+library(p8105.datasets)
+library(ggplot2)
+```
+
+
+
+Here we start to examine the insta cart data sets that are available for use from the database for the class. 
+
+
+```{r, }
+insta_df <- data(instacart)
+```
+
+
+```{r}
+range(instacart$aisle_id)
+tail(names(sort(table(instacart$aisle_id))), 1)
+ggplot(instacart, aes(x = add_to_cart_order, y = order_id)) + geom_point()
+```
+
+As can be seen there are `range(instacart$aisle_id)` different variations in the number of aisles. With the most occurance being `tail(names(sort(table(instacart$aisle_id))), 1)`
+
+Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
+Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
+Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
+
