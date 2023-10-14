@@ -22,16 +22,240 @@ Here we start to examine the insta cart data sets that are available for use fro
 insta_df <- data(instacart)
 ```
 
-
 ```{r}
-range(instacart$aisle_id)
-tail(names(sort(table(instacart$aisle_id))), 1)
-ggplot(instacart, aes(x = add_to_cart_order, y = order_id)) + geom_point()
+instacart %>% 
+  group_by(aisle) %>%
+  summarize(
+    n_obs = n()
+    ) %>%
+  arrange(desc(n_obs))
+instacart %>%
+  group_by(aisle_id)%>%
+  summarize(n_obs = n()) %>%
+  nrow()
+
+instacart %>%
+  group_by(aisle_id)%>%
+  summarize(n_obs = n()) %>%
+  max()
 ```
 
-As can be seen there are `range(instacart$aisle_id)` different variations in the number of aisles. With the most occurance being `tail(names(sort(table(instacart$aisle_id))), 1)`
+Through this R code above we can see that there are a total of 134 aisles with fresh vegetables being the most ordered from, followed by fresh fruits, and then packages vegetables fruits. 
 
-Make a plot that shows the number of items ordered in each aisle, limiting this to aisles with more than 10000 items ordered. Arrange aisles sensibly, and organize your plot so others can read it.
-Make a table showing the three most popular items in each of the aisles “baking ingredients”, “dog food care”, and “packaged vegetables fruits”. Include the number of times each item is ordered in your table.
-Make a table showing the mean hour of the day at which Pink Lady Apples and Coffee Ice Cream are ordered on each day of the week; format this table for human readers (i.e. produce a 2 x 7 table).
 
+
+```{r}
+numbs_df = 
+  instacart %>% 
+  group_by(aisle) %>%
+  summarize(
+    n_obs = n()
+    ) %>%
+  filter(n_obs > 10000)
+
+ggplot(numbs_df, aes(x = n_obs , y = aisle)) +
+  geom_bar(fill = "purple", stat = "identity")
+
+```
+
+
+Above is a clean plot showing the number of observations seeen within each aisle when speicified each aisle to have more than 10,000 observations. 
+
+
+```{r}
+aisle_df = 
+  instacart %>%
+  group_by(aisle) %>%
+  filter(aisle == c("baking ingredients" , "dog food care", "packaged vegetables fruits")) 
+
+aisle_df %>% 
+  group_by(add_to_cart_order) %>%
+  summarize(count = n())
+
+
+aisle_df
+
+```
+
+```
+
+Below I have shown the three aisles shown with the most popular productrs bought from each
+
+```
+
+
+```{r} 
+bake_df <- subset(instacart, aisle == "baking ingredients") %>% 
+  group_by(product_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+head(bake_df)
+
+dog_df <- subset(instacart, aisle == "dog food care") %>% 
+  group_by(product_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+head(dog_df)
+
+veggie_df <- subset(instacart, aisle == "packaged vegetables fruits") %>% 
+  group_by(product_name) %>% 
+  summarise(count = n()) %>% 
+  arrange(desc(count))
+head(veggie_df)
+
+
+
+```
+
+
+
+
+
+
+
+## Problem 2
+
+
+```
+First, we do some data cleaning:
+- format the data to use appropriate variable names
+- focus on the “Overall Health” 
+- include only responses from “Excellent” to “Poor”
+- organize responses as a factor taking levels ordered from “Poor” to “Excellent”
+```
+
+
+```{r, warning = FALSE}
+library(p8105.datasets)
+data("brfss_smart2010")
+
+brfss_df<- 
+  brfss_smart2010 %>% 
+  separate(Locationdesc, into = c("State", "County"), sep = "-") %>% 
+  select(-c(Locationabbr)) %>%
+  filter(Topic == "Overall Health", 
+         Response %in% c("Poor", "Fair", "Good", "Very Good", "Excellent")) %>%
+  mutate(Response = as.factor(Response))
+
+```
+
+
+```
+
+Now with this information we can answer the question of In 2002, which states were observed at 7 or more locations? What about in 2010?
+
+```
+
+```{r} 
+brfss_df %>%
+  filter(Year == 2002) %>%
+  group_by(State) %>%
+  summarize(num = n_distinct(GeoLocation)) %>%
+  filter(num >= 7)
+
+brfss_df %>%
+  filter(Year == 2010) %>%
+  group_by(State) %>%
+  summarize(num = n_distinct(GeoLocation)) %>%
+  filter(num >= 7)
+
+```
+
+
+```
+
+With this we can see which states in 2007 and 2010 were observed at 7 or more location. 
+
+
+```
+
+
+```{r, warning = FALSE, message = FALSE}
+avg_df <- brfss_df %>%
+    filter(Response == "Excellent") %>% 
+    select(Year, State, GeoLocation, Data_value) %>%
+    group_by(Year, State) %>%
+    summarise(mean_data_value = mean(Data_value)) %>% 
+    ungroup()
+```
+
+
+```
+
+The dataset is shown only for excellent responses for the overall health questions, with the average across the locations.
+
+```
+
+
+```
+
+Make a “spaghetti” plot of this average value over time within a state (that is, make a plot showing a line for each state across years – the geom_line geometry and group aesthetic will help).
+
+
+```
+
+```{r, warning = FALSE}
+ggplot(avg_df, aes(x = Year, y = mean_data_value, color = State)) +
+  geom_point(size = 1, alpha = .6) + 
+  geom_line() +
+  labs(y = "Avg Value", title = "Average Excellent Responses")
+
+```
+
+
+
+``` 
+
+Make a two-panel plot showing, for the years 2006, and 2010, distribution of data_value for responses (“Poor” to “Excellent”) among locations in NY State.
+
+```
+
+```{r}
+brfss_df %>% 
+filter(Year %in% c(2006, 2010), 
+         State == "NY ",
+         !is.na(Response)) %>%
+  select(Year, County, Response, Data_value) %>%
+  arrange(Year, County, Response) %>%
+  ggplot(aes(x = Response, y = Data_value)) +
+  geom_boxplot() +
+  facet_wrap(~Year)
+
+```
+
+
+
+
+## Problem 3
+
+
+
+```
+Load, tidy, merge, and otherwise organize the data sets. Your final dataset should include all originally observed variables; exclude participants less than 21 years of age, and those with missing demographic data; and encode data with reasonable variable classes (i.e. not numeric, and using factors with the ordering of tables and plots in mind).
+
+
+```
+
+
+
+```{r}
+
+
+covar_df <- read_csv("data/nhanes_covar.csv") %>%
+  row_to_colnames(row = 4) %>%
+  slice_tail(n = 250) %>%
+  mutate(SEQN = as.integer(SEQN), 
+         sex = as.factor(case_when(sex == 1 ~ "Male", sex == 2 ~ "Female")), 
+         age = as.integer(age), 
+         BMI = as.double(BMI), 
+         education = as.factor(case_when(education == 1 ~ "Less than high school",
+                                         education == 2 ~ "High school equivalent",
+                                         education == 3 ~ "More than high school"))) %>%
+  na.omit() %>%
+  filter(age >= 21)
+
+accel_df <- read_csv("data/nhanes_accel.csv")
+
+nhanes <- left_join(covar, accel, by = "SEQN")
+
+```
