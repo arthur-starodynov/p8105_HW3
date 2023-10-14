@@ -11,6 +11,7 @@ Start the homework by loading the data set.
 library(tidyverse)
 library(p8105.datasets)
 library(ggplot2)
+library(scrutiny)
 ```
 
 
@@ -236,12 +237,15 @@ Load, tidy, merge, and otherwise organize the data sets. Your final dataset shou
 
 ```
 
-
-
 ```{r}
 
+library(readr)
 
-covar_df <- read_csv("data/nhanes_covar.csv") %>%
+```
+
+
+```{r, warning = FALSE, message = FALSE}
+covar_df <- read_csv("./nhanes_covar.csv") %>%
   row_to_colnames(row = 4) %>%
   slice_tail(n = 250) %>%
   mutate(SEQN = as.integer(SEQN), 
@@ -254,8 +258,86 @@ covar_df <- read_csv("data/nhanes_covar.csv") %>%
   na.omit() %>%
   filter(age >= 21)
 
-accel_df <- read_csv("data/nhanes_accel.csv")
+accel_df <- read_csv("./nhanes_accel.csv")
 
-nhanes <- left_join(covar, accel, by = "SEQN")
+combined_df <- left_join(covar_df, accel_df, by = "SEQN")
+
+```
+
+```
+Produce a reader-friendly table for the number of men and women in each education category, and create a visualization of the age distributions for men and women in each education category. Comment on these items.
+
+````
+
+```{r}
+combined_df %>% 
+  group_by(education, sex) %>%
+  summarize(`Number of People` = n()) %>%
+  ungroup() %>%
+  rename(Education = education, Sex = sex)
+
+```
+
+
+```
+
+ The lowest education and sex combination is Females with a high school or high school-equivalent degre
+ 
+```
+
+```
+Shown in graph below, females done with high school have higher median age than males and seen the same with the ones with same education as the males. 
+
+```
+
+```{r}
+combined_df %>%
+  select(SEQN, sex, age, education) %>%
+  ggplot(aes(x = sex, y = age)) +
+  geom_boxplot() +
+  facet_wrap(~education)
+
+
+```
+
+
+```
+
+
+Traditional analyses of accelerometer data focus on the total activity over the day. Using your tidied dataset, aggregate across minutes to create a total activity variable for each participant. Plot these total activities (y-axis) against age (x-axis); your plot should compare men to women and have separate panels for each education level. Include a trend line or a smooth to illustrate differences. Comment on your plot.
+
+
+```
+
+```{r}
+nhames_new_df<- combined_df %>%
+  mutate(activity_per_day = rowSums(select(., contains("min")))) %>%
+  select(SEQN:education, activity_per_day)
+
+ggplot(nhames_new_df, aes(x = age, y = activity_per_day, color = sex)) +
+  geom_point() +
+  geom_smooth(se = F, method = "glm") +
+  facet_wrap(~education) 
+
+```
+
+
+
+
+
+```
+Accelerometer data allows the inspection activity over the course of the day. Make a three-panel plot that shows the 24-hour activity time courses for each education level and use color to indicate sex. Describe in words any patterns or conclusions you can make based on this graph; including smooth trends may help identify differences.
+```
+
+
+```{r}
+combined_df %>% 
+  pivot_longer(cols = contains("min"), names_to = "minute", values_to = "activity") %>%
+  separate(col = minute, "n", into = c("min_char", "min")) %>%
+  mutate(min = as.integer(min)) %>%
+  ggplot(aes(x = min, y = activity, color = sex)) +
+  geom_point(alpha = 0.5) +
+  facet_wrap(~education) 
+
 
 ```
